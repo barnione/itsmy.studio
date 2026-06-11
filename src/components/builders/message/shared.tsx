@@ -24,28 +24,6 @@ export function NestedEditorCard({
   );
 }
 
-export function EditorHeader({
-  label,
-  description,
-  actions,
-}: {
-  label: string;
-  description?: string;
-  actions?: ReactNode;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-2">
-      <div className="min-w-0 flex flex-1 items-center gap-1.5 text-left">
-        <p className="text-xs font-medium uppercase tracking-[0.22em] text-fd-muted-foreground">
-          {label}
-        </p>
-        {description ? <BuilderDescriptionTip description={description} /> : null}
-      </div>
-      {actions}
-    </div>
-  );
-}
-
 export function ReorderActions({
   itemLabel,
   canMoveUp,

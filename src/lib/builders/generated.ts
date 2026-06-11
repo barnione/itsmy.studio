@@ -7,46 +7,189 @@ import type {
   SectionAccessory,
   SelectMenuComponent,
   TextDisplayComponent,
-} from '@/lib/builders/message';
+} from './message';
 import type {
   CheckboxComponent,
   CheckboxGroupComponent,
   FileUploadComponent,
-  ModalChoiceOption,
   ModalBuilderComponent,
   ModalBuilderState,
+  ModalChoiceOption,
   RadioGroupComponent,
   TextInputComponent,
-} from '@/lib/builders/modal';
-import type {
-  GeneratedCheckboxComponent,
-  GeneratedCheckboxGroupComponent,
-  GeneratedChoiceOption,
-  GeneratedFileUploadComponent,
-  GeneratedActionRowComponent,
-  GeneratedButtonComponent,
-  GeneratedContainerComponent,
-  GeneratedFileComponent,
-  GeneratedLabelComponent,
-  GeneratedMediaGalleryComponent,
-  GeneratedMediaGalleryItem,
-  GeneratedMessageComponent,
-  GeneratedMessageConfig,
-  GeneratedModalComponent,
-  GeneratedModalConfig,
-  GeneratedModalInputComponent,
-  GeneratedRadioGroupComponent,
-  GeneratedRepeatComponent,
-  GeneratedSectionAccessory,
-  GeneratedSectionComponent,
-  GeneratedSelectMenuComponent,
-  GeneratedSelectMenuOption,
-  GeneratedSeparatorComponent,
-  GeneratedTextDisplayComponent,
-  GeneratedTextInputComponent,
-  GeneratedThumbnailComponent,
-} from './index';
-import { isHexColor } from './utils';
+} from './modal';
+
+export type GeneratedButtonStyle = 'primary' | 'secondary' | 'success' | 'danger' | 'link';
+
+type GeneratedTextDisplayComponent = {
+  type: 'text-display';
+  content?: string;
+};
+
+type GeneratedSeparatorComponent = {
+  type: 'separator';
+  spacing: 1 | 2;
+  divider?: boolean;
+};
+
+export type GeneratedButtonComponent = {
+  type: 'button';
+  label?: string;
+  style: GeneratedButtonStyle;
+  'custom-id'?: string;
+  url?: string;
+  emoji?: string;
+  disabled?: boolean;
+};
+
+type GeneratedSelectMenuOption = {
+  label: string;
+  value: string;
+};
+
+export type GeneratedSelectMenuComponent = {
+  type: 'select-menu';
+  'custom-id'?: string;
+  placeholder?: string;
+  'min-values'?: number;
+  'max-values'?: number;
+  options: GeneratedSelectMenuOption[];
+};
+
+type GeneratedThumbnailComponent = {
+  type: 'thumbnail';
+  url: string;
+};
+
+type GeneratedMediaGalleryItem = {
+  url: string;
+  description?: string;
+  spoiler?: boolean;
+};
+
+export type GeneratedMediaGalleryComponent = {
+  type: 'media-gallery';
+  items: GeneratedMediaGalleryItem[];
+};
+
+export type GeneratedFileComponent = {
+  type: 'file';
+  url?: string;
+  spoiler?: boolean;
+};
+
+type GeneratedRepeatComponent = {
+  type: 'repeat';
+  'data-source'?: string;
+  template: GeneratedMessageComponent[];
+};
+
+type GeneratedActionRowComponent = {
+  type: 'action-row';
+  components: Array<GeneratedButtonComponent | GeneratedSelectMenuComponent>;
+};
+
+export type GeneratedSectionAccessory = GeneratedButtonComponent | GeneratedThumbnailComponent;
+
+type GeneratedSectionComponent = {
+  type: 'section';
+  components: GeneratedTextDisplayComponent[];
+  accessory?: GeneratedSectionAccessory;
+};
+
+type GeneratedContainerComponent = {
+  type: 'container';
+  color?: string;
+  spoiler?: boolean;
+  components: GeneratedMessageComponent[];
+};
+
+export type GeneratedMessageComponent =
+  | GeneratedTextDisplayComponent
+  | GeneratedSeparatorComponent
+  | GeneratedActionRowComponent
+  | GeneratedSectionComponent
+  | GeneratedContainerComponent
+  | GeneratedMediaGalleryComponent
+  | GeneratedFileComponent
+  | GeneratedRepeatComponent;
+
+export type GeneratedMessageConfig = {
+  ephemeral?: boolean;
+  'disable-mentions'?: boolean;
+  components: GeneratedMessageComponent[];
+};
+
+export type GeneratedTextInputComponent = {
+  type: 'text-input';
+  style: 'short' | 'paragraph';
+  'custom-id'?: string;
+  placeholder?: string;
+  'min-length'?: number;
+  'max-length'?: number;
+  required?: boolean;
+  value?: string;
+};
+
+export type GeneratedFileUploadComponent = {
+  type: 'file-upload';
+  'custom-id'?: string;
+  'min-values'?: number;
+  'max-values'?: number;
+  required?: boolean;
+};
+
+export type GeneratedCheckboxComponent = {
+  type: 'checkbox';
+  'custom-id'?: string;
+  default?: boolean;
+};
+
+export type GeneratedChoiceOption = {
+  label: string;
+  value: string;
+  description?: string;
+  default?: boolean;
+};
+
+export type GeneratedCheckboxGroupComponent = {
+  type: 'checkbox-group';
+  'custom-id'?: string;
+  required?: boolean;
+  'min-values'?: number;
+  'max-values'?: number;
+  options: GeneratedChoiceOption[];
+};
+
+export type GeneratedRadioGroupComponent = {
+  type: 'radio-group';
+  'custom-id'?: string;
+  required?: boolean;
+  options: GeneratedChoiceOption[];
+};
+
+export type GeneratedModalInputComponent =
+  | GeneratedTextInputComponent
+  | GeneratedSelectMenuComponent
+  | GeneratedFileUploadComponent
+  | GeneratedCheckboxComponent
+  | GeneratedCheckboxGroupComponent
+  | GeneratedRadioGroupComponent;
+
+type GeneratedLabelComponent = {
+  type: 'label';
+  label?: string;
+  description?: string;
+  component: GeneratedModalInputComponent;
+};
+
+export type GeneratedModalComponent = GeneratedTextDisplayComponent | GeneratedLabelComponent;
+
+export type GeneratedModalConfig = {
+  title: string;
+  'custom-id'?: string;
+  components: GeneratedModalComponent[];
+};
 
 export function buildGeneratedMessageConfig(
   state: MessageBuilderState,
@@ -66,7 +209,7 @@ export function buildGeneratedModalConfig(state: ModalBuilderState): GeneratedMo
   };
 }
 
-function buildGeneratedMessageComponent(
+export function buildGeneratedMessageComponent(
   component: BuilderComponent,
 ): GeneratedMessageComponent {
   switch (component.type) {
@@ -78,13 +221,13 @@ function buildGeneratedMessageComponent(
         type: 'separator',
         spacing: component.spacing,
         ...(component.divider ? {} : { divider: false }),
-      } satisfies GeneratedSeparatorComponent;
+      };
 
     case 'action-row':
       return {
         type: 'action-row',
         components: component.components.map(buildGeneratedActionRowChild),
-      } satisfies GeneratedActionRowComponent;
+      };
 
     case 'section':
       return {
@@ -93,7 +236,7 @@ function buildGeneratedMessageComponent(
         ...(component.accessory
           ? { accessory: buildGeneratedAccessory(component.accessory) }
           : {}),
-      } satisfies GeneratedSectionComponent;
+      };
 
     case 'container':
       return {
@@ -103,20 +246,20 @@ function buildGeneratedMessageComponent(
           : {}),
         ...(component.spoiler ? { spoiler: true } : {}),
         components: component.components.map(buildGeneratedMessageComponent),
-      } satisfies GeneratedContainerComponent;
+      };
 
     case 'media-gallery':
       return {
         type: 'media-gallery',
         items: component.items.map(buildGeneratedMediaGalleryItem),
-      } satisfies GeneratedMediaGalleryComponent;
+      };
 
     case 'file':
       return {
         type: 'file',
         ...(component.url.trim().length > 0 ? { url: component.url } : {}),
         ...(component.spoiler ? { spoiler: true } : {}),
-      } satisfies GeneratedFileComponent;
+      };
 
     case 'repeat':
       return {
@@ -125,7 +268,7 @@ function buildGeneratedMessageComponent(
           ? { 'data-source': component.dataSource }
           : {}),
         template: component.template.map(buildGeneratedMessageComponent),
-      } satisfies GeneratedRepeatComponent;
+      };
   }
 }
 
@@ -143,7 +286,7 @@ function buildGeneratedModalComponent(
       ? { description: component.description }
       : {}),
     component: buildGeneratedModalInput(component.component),
-  } satisfies GeneratedLabelComponent;
+  };
 }
 
 function buildGeneratedModalInput(
@@ -195,7 +338,7 @@ function buildGeneratedAccessory(accessory: SectionAccessory): GeneratedSectionA
     return {
       type: 'thumbnail',
       url: accessory.url,
-    } satisfies GeneratedThumbnailComponent;
+    };
   }
 
   return buildGeneratedButton(accessory);
@@ -282,9 +425,7 @@ function buildGeneratedFileUpload(
   };
 }
 
-function buildGeneratedCheckbox(
-  component: CheckboxComponent,
-): GeneratedCheckboxComponent {
+function buildGeneratedCheckbox(component: CheckboxComponent): GeneratedCheckboxComponent {
   return {
     type: 'checkbox',
     ...(component.customId.trim().length > 0 ? { 'custom-id': component.customId } : {}),
@@ -323,4 +464,8 @@ function buildGeneratedChoiceOption(option: ModalChoiceOption): GeneratedChoiceO
     ...(option.description.trim().length > 0 ? { description: option.description } : {}),
     ...(option.default ? { default: true } : {}),
   };
+}
+
+function isHexColor(value: string) {
+  return /^#([0-9a-fA-F]{6})$/.test(value.trim());
 }

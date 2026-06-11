@@ -29,7 +29,7 @@ export function readBoolean(value: unknown, fallback = false) {
   return typeof value === 'boolean' ? value : fallback;
 }
 
-export function readNumber(value: unknown, fallback: number) {
+function readNumber(value: unknown, fallback: number) {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 

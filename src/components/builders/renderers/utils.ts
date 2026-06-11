@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { cn } from '@/lib/cn';
 import { get as getEmojiByShortcode } from 'node-emoji';
 import twemoji from 'twemoji';
-import type { GeneratedButtonStyle } from './index';
+import type { GeneratedButtonStyle } from '@/lib/builders/generated';
 
 export const ggSansFontFace = `
 @font-face {
@@ -162,7 +162,7 @@ const SHORTCODE_ALIAS_FIXUPS: Record<string, string> = {
   construction_site: 'building_construction',
 };
 
-export function resolveEmojiShortcode(value: string) {
+function resolveEmojiShortcode(value: string) {
   const match = /^:([a-z0-9_+-]{1,32}):$/i.exec(value.trim());
   if (!match) {
     return null;

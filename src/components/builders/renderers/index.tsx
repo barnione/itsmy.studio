@@ -10,6 +10,25 @@ import {
   Upload,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import type {
+  GeneratedButtonComponent,
+  GeneratedButtonStyle,
+  GeneratedCheckboxComponent,
+  GeneratedCheckboxGroupComponent,
+  GeneratedChoiceOption,
+  GeneratedFileComponent,
+  GeneratedFileUploadComponent,
+  GeneratedMediaGalleryComponent,
+  GeneratedMessageComponent,
+  GeneratedMessageConfig,
+  GeneratedModalComponent,
+  GeneratedModalConfig,
+  GeneratedModalInputComponent,
+  GeneratedRadioGroupComponent,
+  GeneratedSectionAccessory,
+  GeneratedSelectMenuComponent,
+  GeneratedTextInputComponent,
+} from '@/lib/builders/generated';
 import { DiscordTextContent } from './content';
 import {
   discordFontFamily,
@@ -21,178 +40,6 @@ import {
   isHexColor,
   resolveEmojiAsset,
 } from './utils';
-
-export type GeneratedButtonStyle = 'primary' | 'secondary' | 'success' | 'danger' | 'link';
-
-export type GeneratedTextDisplayComponent = {
-  type: 'text-display';
-  content?: string;
-};
-
-export type GeneratedSeparatorComponent = {
-  type: 'separator';
-  spacing: 1 | 2;
-  divider?: boolean;
-};
-
-export type GeneratedButtonComponent = {
-  type: 'button';
-  label?: string;
-  style: GeneratedButtonStyle;
-  'custom-id'?: string;
-  url?: string;
-  emoji?: string;
-  disabled?: boolean;
-};
-
-export type GeneratedSelectMenuOption = {
-  label: string;
-  value: string;
-};
-
-export type GeneratedSelectMenuComponent = {
-  type: 'select-menu';
-  'custom-id'?: string;
-  placeholder?: string;
-  'min-values'?: number;
-  'max-values'?: number;
-  options: GeneratedSelectMenuOption[];
-};
-
-export type GeneratedThumbnailComponent = {
-  type: 'thumbnail';
-  url: string;
-};
-
-export type GeneratedMediaGalleryItem = {
-  url: string;
-  description?: string;
-  spoiler?: boolean;
-};
-
-export type GeneratedMediaGalleryComponent = {
-  type: 'media-gallery';
-  items: GeneratedMediaGalleryItem[];
-};
-
-export type GeneratedFileComponent = {
-  type: 'file';
-  url?: string;
-  spoiler?: boolean;
-};
-
-export type GeneratedRepeatComponent = {
-  type: 'repeat';
-  'data-source'?: string;
-  template: GeneratedMessageComponent[];
-};
-
-export type GeneratedActionRowComponent = {
-  type: 'action-row';
-  components: Array<GeneratedButtonComponent | GeneratedSelectMenuComponent>;
-};
-
-export type GeneratedSectionAccessory = GeneratedButtonComponent | GeneratedThumbnailComponent;
-
-export type GeneratedSectionComponent = {
-  type: 'section';
-  components: GeneratedTextDisplayComponent[];
-  accessory?: GeneratedSectionAccessory;
-};
-
-export type GeneratedContainerComponent = {
-  type: 'container';
-  color?: string;
-  spoiler?: boolean;
-  components: GeneratedMessageComponent[];
-};
-
-export type GeneratedMessageComponent =
-  | GeneratedTextDisplayComponent
-  | GeneratedSeparatorComponent
-  | GeneratedActionRowComponent
-  | GeneratedSectionComponent
-  | GeneratedContainerComponent
-  | GeneratedMediaGalleryComponent
-  | GeneratedFileComponent
-  | GeneratedRepeatComponent;
-
-export type GeneratedMessageConfig = {
-  ephemeral?: boolean;
-  'disable-mentions'?: boolean;
-  components: GeneratedMessageComponent[];
-};
-
-export type GeneratedTextInputComponent = {
-  type: 'text-input';
-  style: 'short' | 'paragraph';
-  'custom-id'?: string;
-  placeholder?: string;
-  'min-length'?: number;
-  'max-length'?: number;
-  required?: boolean;
-  value?: string;
-};
-
-export type GeneratedFileUploadComponent = {
-  type: 'file-upload';
-  'custom-id'?: string;
-  'min-values'?: number;
-  'max-values'?: number;
-  required?: boolean;
-};
-
-export type GeneratedCheckboxComponent = {
-  type: 'checkbox';
-  'custom-id'?: string;
-  default?: boolean;
-};
-
-export type GeneratedChoiceOption = {
-  label: string;
-  value: string;
-  description?: string;
-  default?: boolean;
-};
-
-export type GeneratedCheckboxGroupComponent = {
-  type: 'checkbox-group';
-  'custom-id'?: string;
-  required?: boolean;
-  'min-values'?: number;
-  'max-values'?: number;
-  options: GeneratedChoiceOption[];
-};
-
-export type GeneratedRadioGroupComponent = {
-  type: 'radio-group';
-  'custom-id'?: string;
-  required?: boolean;
-  options: GeneratedChoiceOption[];
-};
-
-export type GeneratedModalInputComponent =
-  | GeneratedTextInputComponent
-  | GeneratedSelectMenuComponent
-  | GeneratedFileUploadComponent
-  | GeneratedCheckboxComponent
-  | GeneratedCheckboxGroupComponent
-  | GeneratedRadioGroupComponent;
-
-export type GeneratedLabelComponent = {
-  type: 'label';
-  label?: string;
-  description?: string;
-  component: GeneratedModalInputComponent;
-};
-
-export type GeneratedModalComponent = GeneratedTextDisplayComponent | GeneratedLabelComponent;
-
-export type GeneratedModalConfig = {
-  title: string;
-  'custom-id'?: string;
-  components: GeneratedModalComponent[];
-};
 
 export function DiscordMessageRenderer({ config }: { config: GeneratedMessageConfig }) {
   return (

@@ -1,5 +1,10 @@
-import { createIdFactory, type BuilderDefinition } from './core';
-import { asArray, asRecord, readBoolean, readInteger, readString } from './import-utils';
+import {
+  createIdFactory,
+  dumpExactYaml,
+  type BuilderDefinition,
+} from './core';
+import { buildGeneratedMessageComponent, buildGeneratedMessageConfig } from './generated';
+import { asRecord, readBoolean, readInteger, readString } from './import-utils';
 
 export type ButtonStyle = 'primary' | 'secondary' | 'success' | 'danger' | 'link';
 export type AddableComponentType =
@@ -175,7 +180,7 @@ export function createTextDisplay(
   };
 }
 
-export function createButton(
+function createButton(
   overrides: Partial<Omit<ButtonComponent, 'id' | 'type'>> = {},
 ): ButtonComponent {
   return {
@@ -202,7 +207,7 @@ export function createSelectMenuOption(
   };
 }
 
-export function createSelectMenu(
+function createSelectMenu(
   overrides: Partial<Omit<SelectMenuComponent, 'id' | 'type'>> = {},
 ): SelectMenuComponent {
   return {
@@ -220,7 +225,7 @@ export function createSelectMenu(
   };
 }
 
-export function createThumbnail(
+function createThumbnail(
   url = 'https://itsmy.studio/itsmystudio-logo.svg',
 ): ThumbnailComponent {
   return {
@@ -242,7 +247,7 @@ export function createMediaGalleryItem(
   };
 }
 
-export function createMediaGallery(
+function createMediaGallery(
   items: MediaGalleryItem[] = [
     createMediaGalleryItem(),
     createMediaGalleryItem(),
@@ -255,7 +260,7 @@ export function createMediaGallery(
   };
 }
 
-export function createFile(
+function createFile(
   overrides: Partial<Omit<FileComponent, 'id' | 'type'>> = {},
 ): FileComponent {
   return {
@@ -267,7 +272,7 @@ export function createFile(
   };
 }
 
-export function createRepeat(
+function createRepeat(
   overrides: Partial<Omit<RepeatComponent, 'id' | 'type'>> = {},
 ): RepeatComponent {
   return {
@@ -279,7 +284,7 @@ export function createRepeat(
   };
 }
 
-export function createActionRow(
+function createActionRow(
   components: ActionRowChildComponent[] = [
     createButton({
       label: 'Join Discord',
@@ -296,7 +301,7 @@ export function createActionRow(
   };
 }
 
-export function createSection(): SectionComponent {
+function createSection(): SectionComponent {
   return {
     id: nextMessageId('section'),
     type: 'section',
@@ -305,7 +310,7 @@ export function createSection(): SectionComponent {
   };
 }
 
-export function createContainer(): ContainerComponent {
+function createContainer(): ContainerComponent {
   return {
     id: nextMessageId('container'),
     type: 'container',
@@ -315,7 +320,7 @@ export function createContainer(): ContainerComponent {
   };
 }
 
-export function createSeparator(): SeparatorComponent {
+function createSeparator(): SeparatorComponent {
   return {
     id: nextMessageId('separator'),
     type: 'separator',
@@ -373,13 +378,13 @@ export function createAccessory(type: string): SectionAccessory | null {
   return null;
 }
 
-export function createInitialMessageBuilderState(): MessageBuilderState {
+function createInitialMessageBuilderState(): MessageBuilderState {
   return {
     ephemeral: false,
     disableMentions: false,
     components: [
       createTextDisplay(
-        '### Welcome [[member_display_name]]\nThanks for joining **%server_name%**.',
+        '### Welcome [[member_display_name]]\nThanks for joining **%guild_name%**.',
       ),
       createTextDisplay(
         'Use placeholders, markdown, buttons, sections, galleries, and files to shape the message.',
@@ -443,39 +448,8 @@ export function describeComponent(type: DisplayComponentType) {
   }
 }
 
-export function previewButtonClassName(style: ButtonStyle) {
-  switch (style) {
-    case 'primary':
-      return 'bg-[#3C3E4A] text-white';
-    case 'secondary':
-      return 'bg-[#3C3E4A] text-white';
-    case 'success':
-      return 'bg-[#248046] text-white';
-    case 'danger':
-      return 'bg-[#DA373C] text-white';
-    case 'link':
-      return 'bg-[#3C3E4A] text-white';
-  }
-}
-
-function isHexColor(value: string) {
-  return /^#([0-9a-fA-F]{6})$/.test(value.trim());
-}
-
-export function serializeMessageConfig(config: MessageBuilderState) {
-  const lines: string[] = [];
-
-  if (config.ephemeral) lines.push('ephemeral: true');
-  if (config.disableMentions) lines.push('disable-mentions: true');
-
-  if (config.components.length === 0) {
-    lines.push('components: []');
-  } else {
-    lines.push('components:');
-    lines.push(...serializeComponents(config.components, 1));
-  }
-
-  return lines.join('\n');
+function serializeMessageConfig(config: MessageBuilderState) {
+  return dumpExactYaml(buildGeneratedMessageConfig(config));
 }
 
 export function deserializeMessageConfig(value: unknown): MessageBuilderState {
@@ -488,16 +462,12 @@ export function deserializeMessageConfig(value: unknown): MessageBuilderState {
   };
 }
 
-export function deserializeMessageComponents(value: unknown, path = 'components'): BuilderComponent[] {
+function deserializeMessageComponents(value: unknown, path = 'components'): BuilderComponent[] {
   if (!Array.isArray(value)) return [];
 
   return value.map((component, index) =>
     deserializeBuilderComponent(component, `${path}[${index}]`),
   );
-}
-
-export function serializeMessageComponents(components: BuilderComponent[], indentLevel: number) {
-  return serializeComponents(components, indentLevel);
 }
 
 function deserializeBuilderComponent(value: unknown, path: string): BuilderComponent {
@@ -676,257 +646,6 @@ function normalizeButtonStyle(style: string): ButtonStyle {
     default:
       return 'primary';
   }
-}
-
-function serializeComponents(components: BuilderComponent[], indentLevel: number) {
-  return components.flatMap((component) => serializeComponent(component, indentLevel));
-}
-
-function serializeComponent(component: BuilderComponent, indentLevel: number): string[] {
-  switch (component.type) {
-    case 'text-display':
-      return serializeTextDisplay(component, indentLevel);
-    case 'separator':
-      return serializeSeparator(component, indentLevel);
-    case 'action-row':
-      return serializeActionRow(component, indentLevel);
-    case 'section':
-      return serializeSection(component, indentLevel);
-    case 'container':
-      return serializeContainer(component, indentLevel);
-    case 'media-gallery':
-      return serializeMediaGallery(component, indentLevel);
-    case 'file':
-      return serializeFile(component, indentLevel);
-    case 'repeat':
-      return serializeRepeat(component, indentLevel);
-  }
-}
-
-function serializeTextDisplay(component: TextDisplayComponent, indentLevel: number) {
-  const lines = [`${indent(indentLevel)}- type: text-display`];
-  pushStringField(lines, indentLevel + 1, 'content', component.content);
-  return lines;
-}
-
-function serializeSeparator(component: SeparatorComponent, indentLevel: number) {
-  const lines = [`${indent(indentLevel)}- type: separator`];
-  lines.push(`${indent(indentLevel + 1)}spacing: ${component.spacing}`);
-  if (!component.divider) {
-    lines.push(`${indent(indentLevel + 1)}divider: false`);
-  }
-  return lines;
-}
-
-function serializeActionRow(component: ActionRowComponent, indentLevel: number) {
-  const lines = [`${indent(indentLevel)}- type: action-row`];
-
-  if (component.components.length === 0) {
-    lines.push(`${indent(indentLevel + 1)}components: []`);
-  } else {
-    lines.push(`${indent(indentLevel + 1)}components:`);
-    lines.push(
-      ...component.components.flatMap((child) =>
-        child.type === 'button'
-          ? serializeButton(child, indentLevel + 2)
-          : serializeSelectMenu(child, indentLevel + 2),
-      ),
-    );
-  }
-
-  return lines;
-}
-
-function serializeSection(component: SectionComponent, indentLevel: number) {
-  const lines = [`${indent(indentLevel)}- type: section`];
-
-  if (component.components.length === 0) {
-    lines.push(`${indent(indentLevel + 1)}components: []`);
-  } else {
-    lines.push(`${indent(indentLevel + 1)}components:`);
-    lines.push(
-      ...component.components.flatMap((text) => serializeTextDisplay(text, indentLevel + 2)),
-    );
-  }
-
-  if (component.accessory) {
-    lines.push(`${indent(indentLevel + 1)}accessory:`);
-    lines.push(...serializeAccessory(component.accessory, indentLevel + 2));
-  }
-
-  return lines;
-}
-
-function serializeContainer(component: ContainerComponent, indentLevel: number) {
-  const lines = [`${indent(indentLevel)}- type: container`];
-
-  if (isHexColor(component.color)) {
-    lines.push(`${indent(indentLevel + 1)}color: ${quoteString(component.color.trim())}`);
-  }
-
-  if (component.spoiler) {
-    lines.push(`${indent(indentLevel + 1)}spoiler: true`);
-  }
-
-  if (component.components.length === 0) {
-    lines.push(`${indent(indentLevel + 1)}components: []`);
-  } else {
-    lines.push(`${indent(indentLevel + 1)}components:`);
-    lines.push(...serializeComponents(component.components, indentLevel + 2));
-  }
-
-  return lines;
-}
-
-function serializeMediaGallery(component: MediaGalleryComponent, indentLevel: number) {
-  const lines = [`${indent(indentLevel)}- type: media-gallery`];
-
-  if (component.items.length === 0) {
-    lines.push(`${indent(indentLevel + 1)}items: []`);
-    return lines;
-  }
-
-  lines.push(`${indent(indentLevel + 1)}items:`);
-  for (const item of component.items) {
-    lines.push(`${indent(indentLevel + 2)}- url: ${quoteString(item.url)}`);
-    if (item.description.trim().length > 0) {
-      pushStringField(lines, indentLevel + 3, 'description', item.description);
-    }
-    if (item.spoiler) {
-      lines.push(`${indent(indentLevel + 3)}spoiler: true`);
-    }
-  }
-
-  return lines;
-}
-
-function serializeFile(component: FileComponent, indentLevel: number) {
-  const lines = [`${indent(indentLevel)}- type: file`];
-  pushStringField(lines, indentLevel + 1, 'url', component.url);
-  if (component.spoiler) {
-    lines.push(`${indent(indentLevel + 1)}spoiler: true`);
-  }
-  return lines;
-}
-
-function serializeRepeat(component: RepeatComponent, indentLevel: number) {
-  const lines = [`${indent(indentLevel)}- type: repeat`];
-  pushStringField(lines, indentLevel + 1, 'data-source', component.dataSource);
-
-  if (component.template.length === 0) {
-    lines.push(`${indent(indentLevel + 1)}template: []`);
-  } else {
-    lines.push(`${indent(indentLevel + 1)}template:`);
-    lines.push(...serializeComponents(component.template, indentLevel + 2));
-  }
-
-  return lines;
-}
-
-function serializeButton(button: ButtonComponent, indentLevel: number) {
-  const lines = [`${indent(indentLevel)}- type: button`];
-  pushStringField(lines, indentLevel + 1, 'label', button.label);
-  lines.push(`${indent(indentLevel + 1)}style: ${quoteString(button.style)}`);
-
-  if (button.style === 'link') {
-    if (button.url.trim().length > 0) {
-      pushStringField(lines, indentLevel + 1, 'url', button.url);
-    }
-  } else if (button.customId.trim().length > 0) {
-    pushStringField(lines, indentLevel + 1, 'custom-id', button.customId);
-  }
-
-  if (button.emoji.trim().length > 0) {
-    pushStringField(lines, indentLevel + 1, 'emoji', button.emoji);
-  }
-
-  if (button.disabled) {
-    lines.push(`${indent(indentLevel + 1)}disabled: true`);
-  }
-
-  return lines;
-}
-
-function serializeSelectMenu(component: SelectMenuComponent, indentLevel: number) {
-  const lines = [`${indent(indentLevel)}- type: select-menu`];
-  pushStringField(lines, indentLevel + 1, 'custom-id', component.customId);
-
-  if (component.options.length === 0) {
-    lines.push(`${indent(indentLevel + 1)}options: []`);
-  } else {
-    lines.push(`${indent(indentLevel + 1)}options:`);
-    for (const option of component.options) {
-      lines.push(`${indent(indentLevel + 2)}- label: ${quoteString(option.label)}`);
-      lines.push(`${indent(indentLevel + 3)}value: ${quoteString(option.value)}`);
-    }
-  }
-
-  if (component.placeholder.trim().length > 0) {
-    pushStringField(lines, indentLevel + 1, 'placeholder', component.placeholder);
-  }
-
-  if (component.minValues !== 1) {
-    lines.push(`${indent(indentLevel + 1)}min-values: ${component.minValues}`);
-  }
-
-  if (component.maxValues !== 1) {
-    lines.push(`${indent(indentLevel + 1)}max-values: ${component.maxValues}`);
-  }
-
-  return lines;
-}
-
-function serializeAccessory(accessory: SectionAccessory, indentLevel: number) {
-  if (accessory.type === 'thumbnail') {
-    return [
-      `${indent(indentLevel)}type: thumbnail`,
-      `${indent(indentLevel + 1)}url: ${quoteString(accessory.url)}`,
-    ];
-  }
-
-  const lines = [`${indent(indentLevel)}type: button`];
-  pushStringField(lines, indentLevel + 1, 'label', accessory.label);
-  lines.push(`${indent(indentLevel + 1)}style: ${quoteString(accessory.style)}`);
-
-  if (accessory.style === 'link') {
-    if (accessory.url.trim().length > 0) {
-      pushStringField(lines, indentLevel + 1, 'url', accessory.url);
-    }
-  } else if (accessory.customId.trim().length > 0) {
-    pushStringField(lines, indentLevel + 1, 'custom-id', accessory.customId);
-  }
-
-  if (accessory.emoji.trim().length > 0) {
-    pushStringField(lines, indentLevel + 1, 'emoji', accessory.emoji);
-  }
-
-  if (accessory.disabled) {
-    lines.push(`${indent(indentLevel + 1)}disabled: true`);
-  }
-
-  return lines;
-}
-
-function pushStringField(lines: string[], indentLevel: number, key: string, value: string) {
-  if (value.trim().length === 0) return;
-
-  if (value.includes('\n')) {
-    lines.push(`${indent(indentLevel)}${key}: |`);
-    for (const line of value.split('\n')) {
-      lines.push(`${indent(indentLevel + 1)}${line}`);
-    }
-    return;
-  }
-
-  lines.push(`${indent(indentLevel)}${key}: ${quoteString(value)}`);
-}
-
-function quoteString(value: string) {
-  return JSON.stringify(value);
-}
-
-function indent(level: number) {
-  return '  '.repeat(level);
 }
 
 export const MESSAGE_BUILDER_DEFINITION: BuilderDefinition<MessageBuilderState> = {

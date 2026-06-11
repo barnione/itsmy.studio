@@ -1,9 +1,14 @@
-import { type BuilderDefinition, type BuilderOption } from './core';
+import {
+  dumpExactYaml,
+  type BuilderDefinition,
+  type BuilderOption,
+  type BuilderYamlObject,
+} from './core';
 import { asArray, asRecord, readBoolean, readInteger, readString } from './import-utils';
 import { DEFAULT_PLACEHOLDERS, HYPIXEL_PLACEHOLDERS, ORIGIN_REALMS_PLACEHOLDERS, THE_HIVE_PLACEHOLDERS } from './itsmyconfig-presets';
 
 export type ItsMyConfigPreviewView = 'chat' | 'lore' | 'scoreboard' | 'tablist';
-export type ItsMyConfigPlaceholderType =
+type ItsMyConfigPlaceholderType =
   | 'string'
   | 'color'
   | 'colored_text'
@@ -17,7 +22,7 @@ type ItsMyConfigPlaceholderBase = {
   description?: string;
 };
 
-export type ItsMyConfigStringPlaceholder = ItsMyConfigPlaceholderBase & {
+type ItsMyConfigStringPlaceholder = ItsMyConfigPlaceholderBase & {
   type: 'string';
   value: string;
 };
@@ -32,30 +37,30 @@ export type ItsMyConfigColorPlaceholder = ItsMyConfigPlaceholderBase & {
   obfuscated: boolean;
 };
 
-export type ItsMyConfigColoredTextPlaceholder = ItsMyConfigPlaceholderBase & {
+type ItsMyConfigColoredTextPlaceholder = ItsMyConfigPlaceholderBase & {
   type: 'colored_text';
   value: string;
 };
 
-export type ItsMyConfigMathPlaceholder = ItsMyConfigPlaceholderBase & {
+type ItsMyConfigMathPlaceholder = ItsMyConfigPlaceholderBase & {
   type: 'math';
   value: string;
   rounding: string;
   precision: number;
 };
 
-export type ItsMyConfigAnimationPlaceholder = ItsMyConfigPlaceholderBase & {
+type ItsMyConfigAnimationPlaceholder = ItsMyConfigPlaceholderBase & {
   type: 'animation';
   values: string[];
   interval: number;
 };
 
-export type ItsMyConfigRandomPlaceholder = ItsMyConfigPlaceholderBase & {
+type ItsMyConfigRandomPlaceholder = ItsMyConfigPlaceholderBase & {
   type: 'random';
   values: string[];
 };
 
-export type ItsMyConfigProgressBarPlaceholder = ItsMyConfigPlaceholderBase & {
+type ItsMyConfigProgressBarPlaceholder = ItsMyConfigPlaceholderBase & {
   type: 'progress_bar';
   value: string;
   completedColor: string;
@@ -72,7 +77,7 @@ export type ItsMyConfigPlaceholder =
   | ItsMyConfigRandomPlaceholder
   | ItsMyConfigProgressBarPlaceholder;
 
-export type ItsMyConfigTemplates = {
+type ItsMyConfigTemplates = {
   chat: {
     lines: string;
   };
@@ -244,7 +249,7 @@ export function isItsMyConfigPlaceholderVisible(placeholder: ItsMyConfigPlacehol
   return placeholder.id !== 'price-modifier';
 }
 
-export function cloneItsMyConfigPlaceholder<TPlaceholder extends ItsMyConfigPlaceholder>(
+function cloneItsMyConfigPlaceholder<TPlaceholder extends ItsMyConfigPlaceholder>(
   placeholder: TPlaceholder,
 ): TPlaceholder {
   switch (placeholder.type) {
@@ -263,7 +268,7 @@ export function cloneItsMyConfigPlaceholder<TPlaceholder extends ItsMyConfigPlac
   }
 }
 
-export function cloneItsMyConfigTemplates(templates: ItsMyConfigTemplates): ItsMyConfigTemplates {
+function cloneItsMyConfigTemplates(templates: ItsMyConfigTemplates): ItsMyConfigTemplates {
   return {
     chat: { ...templates.chat },
     lore: { ...templates.lore },
@@ -303,55 +308,68 @@ export function deserializeItsMyConfigConfig(value: unknown): ItsMyConfigBuilder
   };
 }
 
-export function serializeItsMyConfigState(state: ItsMyConfigBuilderState) {
-  const lines = ['custom-placeholder:'];
+function serializeItsMyConfigState(state: ItsMyConfigBuilderState) {
+  const customPlaceholder: BuilderYamlObject = {};
 
   for (const placeholder of state.placeholders) {
-    lines.push(`  ${placeholder.id}:`);
-
-    switch (placeholder.type) {
-      case 'string':
-        pushYamlStringField(lines, 2, 'value', placeholder.value);
-        break;
-      case 'colored_text':
-        pushYamlStringField(lines, 2, 'value', placeholder.value);
-        pushYamlPlainField(lines, 2, 'type', placeholder.type);
-        break;
-      case 'color':
-        pushYamlStringField(lines, 2, 'value', placeholder.value);
-        pushYamlPlainField(lines, 2, 'type', placeholder.type);
-        pushYamlBooleanField(lines, 2, 'bold', placeholder.bold);
-        pushYamlBooleanField(lines, 2, 'italic', placeholder.italic);
-        pushYamlBooleanField(lines, 2, 'underlined', placeholder.underlined);
-        pushYamlBooleanField(lines, 2, 'strikethrough', placeholder.strikethrough);
-        pushYamlBooleanField(lines, 2, 'obfuscated', placeholder.obfuscated);
-        break;
-      case 'math':
-        pushYamlStringField(lines, 2, 'value', placeholder.value);
-        pushYamlPlainField(lines, 2, 'type', placeholder.type);
-        pushYamlPlainField(lines, 2, 'rounding', placeholder.rounding);
-        pushYamlNumberField(lines, 2, 'precision', placeholder.precision);
-        break;
-      case 'animation':
-        pushYamlStringListField(lines, 2, 'values', placeholder.values);
-        pushYamlPlainField(lines, 2, 'type', placeholder.type);
-        pushYamlNumberField(lines, 2, 'interval', placeholder.interval);
-        break;
-      case 'random':
-        pushYamlStringListField(lines, 2, 'values', placeholder.values);
-        pushYamlPlainField(lines, 2, 'type', placeholder.type);
-        break;
-      case 'progress_bar':
-        pushYamlStringField(lines, 2, 'value', placeholder.value);
-        pushYamlPlainField(lines, 2, 'type', placeholder.type);
-        pushYamlStringField(lines, 2, 'completed-color', placeholder.completedColor);
-        pushYamlStringField(lines, 2, 'progress-color', placeholder.progressColor);
-        pushYamlStringField(lines, 2, 'remaining-color', placeholder.remainingColor);
-        break;
-    }
+    customPlaceholder[placeholder.id] = toItsMyConfigPlaceholderYaml(placeholder);
   }
 
-  return `${lines.join('\n')}\n`;
+  return `${dumpExactYaml({ 'custom-placeholder': customPlaceholder })}\n`;
+}
+
+function toItsMyConfigPlaceholderYaml(placeholder: ItsMyConfigPlaceholder): BuilderYamlObject {
+  switch (placeholder.type) {
+    case 'string':
+      return {
+        value: placeholder.value,
+      };
+    case 'colored_text':
+      return {
+        value: placeholder.value,
+        type: placeholder.type,
+      };
+    case 'color':
+      return {
+        value: placeholder.value,
+        type: placeholder.type,
+        bold: trueOrUndefined(placeholder.bold),
+        italic: trueOrUndefined(placeholder.italic),
+        underlined: trueOrUndefined(placeholder.underlined),
+        strikethrough: trueOrUndefined(placeholder.strikethrough),
+        obfuscated: trueOrUndefined(placeholder.obfuscated),
+      };
+    case 'math':
+      return {
+        value: placeholder.value,
+        type: placeholder.type,
+        rounding: placeholder.rounding,
+        precision: placeholder.precision,
+      };
+    case 'animation':
+      return {
+        values: placeholder.values,
+        type: placeholder.type,
+        interval: placeholder.interval,
+      };
+    case 'random':
+      return {
+        values: placeholder.values,
+        type: placeholder.type,
+      };
+    case 'progress_bar':
+      return {
+        value: placeholder.value,
+        type: placeholder.type,
+        'completed-color': placeholder.completedColor,
+        'progress-color': placeholder.progressColor,
+        'remaining-color': placeholder.remainingColor,
+      };
+  }
+}
+
+function trueOrUndefined(value: boolean) {
+  return value ? true : undefined;
 }
 
 function deserializeImportedPlaceholder(
@@ -483,40 +501,4 @@ function readStringValues(value: unknown, fallback: string[]) {
   }
 
   return [...fallback];
-}
-
-function pushYamlStringField(lines: string[], indentLevel: number, key: string, value: string) {
-  const indent = '  '.repeat(indentLevel);
-  lines.push(`${indent}${key}: ${JSON.stringify(value)}`);
-}
-
-function pushYamlPlainField(lines: string[], indentLevel: number, key: string, value: string) {
-  const indent = '  '.repeat(indentLevel);
-  lines.push(`${indent}${key}: ${value}`);
-}
-
-function pushYamlBooleanField(lines: string[], indentLevel: number, key: string, value: boolean) {
-  if (!value) return;
-  const indent = '  '.repeat(indentLevel);
-  lines.push(`${indent}${key}: true`);
-}
-
-function pushYamlNumberField(lines: string[], indentLevel: number, key: string, value: number) {
-  const indent = '  '.repeat(indentLevel);
-  lines.push(`${indent}${key}: ${value}`);
-}
-
-function pushYamlStringListField(lines: string[], indentLevel: number, key: string, values: string[]) {
-  const indent = '  '.repeat(indentLevel);
-
-  if (values.length === 0) {
-    lines.push(`${indent}${key}: []`);
-    return;
-  }
-
-  lines.push(`${indent}${key}:`);
-
-  for (const value of values) {
-    lines.push(`${indent}  - ${JSON.stringify(value)}`);
-  }
 }

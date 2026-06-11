@@ -7,7 +7,7 @@ import { cn } from '../lib/cn';
 import { type ComponentProps, type ReactNode, useEffect, useState } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'fumadocs-ui/components/ui/collapsible';
 
-export interface ParameterNode {
+interface ParameterNode {
   name: string;
   description: ReactNode;
 }

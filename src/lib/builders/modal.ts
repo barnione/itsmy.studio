@@ -1,4 +1,9 @@
-import { createIdFactory, type BuilderDefinition } from './core';
+import {
+  createIdFactory,
+  dumpExactYaml,
+  type BuilderDefinition,
+} from './core';
+import { buildGeneratedModalConfig } from './generated';
 import { asRecord, readBoolean, readInteger, readString } from './import-utils';
 import type {
   SelectMenuComponent,
@@ -102,7 +107,7 @@ export const TEXT_INPUT_STYLES: TextInputStyle[] = ['short', 'paragraph'];
 
 const nextModalId = createIdFactory();
 
-export function createModalTextDisplay(
+function createModalTextDisplay(
   content = 'Explain what the modal is for before showing the fields.',
 ): TextDisplayComponent {
   return {
@@ -136,7 +141,7 @@ export function createModalChoiceOption(
   };
 }
 
-export function createModalSelectMenu(
+function createModalSelectMenu(
   overrides: Partial<Omit<SelectMenuComponent, 'id' | 'type'>> = {},
 ): SelectMenuComponent {
   return {
@@ -154,7 +159,7 @@ export function createModalSelectMenu(
   };
 }
 
-export function createTextInput(
+function createTextInput(
   overrides: Partial<Omit<TextInputComponent, 'id' | 'type'>> = {},
 ): TextInputComponent {
   return {
@@ -171,7 +176,7 @@ export function createTextInput(
   };
 }
 
-export function createFileUpload(
+function createFileUpload(
   overrides: Partial<Omit<FileUploadComponent, 'id' | 'type'>> = {},
 ): FileUploadComponent {
   return {
@@ -185,7 +190,7 @@ export function createFileUpload(
   };
 }
 
-export function createCheckbox(
+function createCheckbox(
   overrides: Partial<Omit<CheckboxComponent, 'id' | 'type'>> = {},
 ): CheckboxComponent {
   return {
@@ -197,7 +202,7 @@ export function createCheckbox(
   };
 }
 
-export function createCheckboxGroup(
+function createCheckboxGroup(
   overrides: Partial<Omit<CheckboxGroupComponent, 'id' | 'type'>> = {},
 ): CheckboxGroupComponent {
   return {
@@ -215,7 +220,7 @@ export function createCheckboxGroup(
   };
 }
 
-export function createRadioGroup(
+function createRadioGroup(
   overrides: Partial<Omit<RadioGroupComponent, 'id' | 'type'>> = {},
 ): RadioGroupComponent {
   return {
@@ -231,7 +236,7 @@ export function createRadioGroup(
   };
 }
 
-export function createLabel(): LabelComponent {
+function createLabel(): LabelComponent {
   return {
     id: nextModalId('modal-label'),
     type: 'label',
@@ -267,7 +272,7 @@ export function createModalInputComponent(type: ModalInputComponentType): ModalI
   }
 }
 
-export function createInitialModalBuilderState(): ModalBuilderState {
+function createInitialModalBuilderState(): ModalBuilderState {
   return {
     title: 'Feedback Modal',
     customId: 'feedback_modal',
@@ -324,21 +329,8 @@ export function describeModalComponent(
   }
 }
 
-export function serializeModalConfig(config: ModalBuilderState) {
-  const lines: string[] = [`title: ${quoteString(config.title)}`];
-
-  if (config.customId.trim().length > 0) {
-    lines.push(`custom-id: ${quoteString(config.customId)}`);
-  }
-
-  if (config.components.length === 0) {
-    lines.push('components: []');
-  } else {
-    lines.push('components:');
-    lines.push(...serializeComponents(config.components, 1));
-  }
-
-  return lines.join('\n');
+function serializeModalConfig(config: ModalBuilderState) {
+  return dumpExactYaml(buildGeneratedModalConfig(config));
 }
 
 export function deserializeModalConfig(value: unknown): ModalBuilderState {
@@ -483,179 +475,6 @@ function deserializeModalChoiceOption(value: unknown, path: string): ModalChoice
 
 function normalizeTextInputStyle(style: string): TextInputStyle {
   return style.toLowerCase() === 'paragraph' ? 'paragraph' : 'short';
-}
-
-function serializeComponents(components: ModalBuilderComponent[], indentLevel: number) {
-  return components.flatMap((component) => serializeComponent(component, indentLevel));
-}
-
-function serializeComponent(component: ModalBuilderComponent, indentLevel: number): string[] {
-  switch (component.type) {
-    case 'text-display':
-      return serializeTextDisplay(component, indentLevel);
-    case 'label':
-      return serializeLabel(component, indentLevel);
-  }
-}
-
-function serializeTextDisplay(component: TextDisplayComponent, indentLevel: number) {
-  const lines = [`${indent(indentLevel)}- type: text-display`];
-  pushStringField(lines, indentLevel + 1, 'content', component.content);
-  return lines;
-}
-
-function serializeLabel(component: LabelComponent, indentLevel: number) {
-  const lines = [`${indent(indentLevel)}- type: label`];
-  pushStringField(lines, indentLevel + 1, 'label', component.label);
-  pushStringField(lines, indentLevel + 1, 'description', component.description);
-  lines.push(`${indent(indentLevel + 1)}component:`);
-  lines.push(...serializeInputComponent(component.component, indentLevel + 2));
-  return lines;
-}
-
-function serializeInputComponent(
-  component: ModalInputComponent,
-  indentLevel: number,
-) {
-  switch (component.type) {
-    case 'text-input': {
-      const lines = [`${indent(indentLevel)}type: text-input`];
-      lines.push(`${indent(indentLevel)}style: ${quoteString(component.style)}`);
-      pushStringField(lines, indentLevel, 'custom-id', component.customId);
-      pushStringField(lines, indentLevel, 'placeholder', component.placeholder);
-      if (component.minLength !== null) {
-        lines.push(`${indent(indentLevel)}min-length: ${component.minLength}`);
-      }
-      if (component.maxLength !== null) {
-        lines.push(`${indent(indentLevel)}max-length: ${component.maxLength}`);
-      }
-      if (component.required) {
-        lines.push(`${indent(indentLevel)}required: true`);
-      }
-      pushStringField(lines, indentLevel, 'value', component.value);
-      return lines;
-    }
-
-    case 'select-menu': {
-      const lines = [`${indent(indentLevel)}type: select-menu`];
-      pushStringField(lines, indentLevel, 'custom-id', component.customId);
-
-      if (component.options.length === 0) {
-        lines.push(`${indent(indentLevel)}options: []`);
-      } else {
-        lines.push(`${indent(indentLevel)}options:`);
-        for (const option of component.options) {
-          lines.push(`${indent(indentLevel + 1)}- label: ${quoteString(option.label)}`);
-          lines.push(`${indent(indentLevel + 2)}value: ${quoteString(option.value)}`);
-        }
-      }
-
-      if (component.placeholder.trim().length > 0) {
-        pushStringField(lines, indentLevel, 'placeholder', component.placeholder);
-      }
-
-      if (component.minValues !== 1) {
-        lines.push(`${indent(indentLevel)}min-values: ${component.minValues}`);
-      }
-
-      if (component.maxValues !== 1) {
-        lines.push(`${indent(indentLevel)}max-values: ${component.maxValues}`);
-      }
-
-      return lines;
-    }
-
-    case 'file-upload': {
-      const lines = [`${indent(indentLevel)}type: file-upload`];
-      pushStringField(lines, indentLevel, 'custom-id', component.customId);
-      if (component.minValues !== null) {
-        lines.push(`${indent(indentLevel)}min-values: ${component.minValues}`);
-      }
-      if (component.maxValues !== 1) {
-        lines.push(`${indent(indentLevel)}max-values: ${component.maxValues}`);
-      }
-      if (component.required) {
-        lines.push(`${indent(indentLevel)}required: true`);
-      }
-      return lines;
-    }
-
-    case 'checkbox': {
-      const lines = [`${indent(indentLevel)}type: checkbox`];
-      pushStringField(lines, indentLevel, 'custom-id', component.customId);
-      if (component.default) {
-        lines.push(`${indent(indentLevel)}default: true`);
-      }
-      return lines;
-    }
-
-    case 'checkbox-group': {
-      const lines = [`${indent(indentLevel)}type: checkbox-group`];
-      pushStringField(lines, indentLevel, 'custom-id', component.customId);
-      if (component.required) {
-        lines.push(`${indent(indentLevel)}required: true`);
-      }
-      if (component.minValues !== null) {
-        lines.push(`${indent(indentLevel)}min-values: ${component.minValues}`);
-      }
-      if (component.maxValues !== null) {
-        lines.push(`${indent(indentLevel)}max-values: ${component.maxValues}`);
-      }
-      lines.push(...serializeModalChoiceOptions(component.options, indentLevel));
-      return lines;
-    }
-
-    case 'radio-group': {
-      const lines = [`${indent(indentLevel)}type: radio-group`];
-      pushStringField(lines, indentLevel, 'custom-id', component.customId);
-      if (component.required) {
-        lines.push(`${indent(indentLevel)}required: true`);
-      }
-      lines.push(...serializeModalChoiceOptions(component.options, indentLevel));
-      return lines;
-    }
-  }
-}
-
-function serializeModalChoiceOptions(options: ModalChoiceOption[], indentLevel: number) {
-  if (options.length === 0) {
-    return [`${indent(indentLevel)}options: []`];
-  }
-
-  const lines = [`${indent(indentLevel)}options:`];
-  for (const option of options) {
-    lines.push(`${indent(indentLevel + 1)}- label: ${quoteString(option.label)}`);
-    lines.push(`${indent(indentLevel + 2)}value: ${quoteString(option.value)}`);
-    if (option.description.trim().length > 0) {
-      lines.push(`${indent(indentLevel + 2)}description: ${quoteString(option.description)}`);
-    }
-    if (option.default) {
-      lines.push(`${indent(indentLevel + 2)}default: true`);
-    }
-  }
-  return lines;
-}
-
-function pushStringField(lines: string[], indentLevel: number, key: string, value: string) {
-  if (value.trim().length === 0) return;
-
-  if (value.includes('\n')) {
-    lines.push(`${indent(indentLevel)}${key}: |`);
-    for (const line of value.split('\n')) {
-      lines.push(`${indent(indentLevel + 1)}${line}`);
-    }
-    return;
-  }
-
-  lines.push(`${indent(indentLevel)}${key}: ${quoteString(value)}`);
-}
-
-function quoteString(value: string) {
-  return JSON.stringify(value);
-}
-
-function indent(level: number) {
-  return '  '.repeat(level);
 }
 
 export const MODAL_BUILDER_DEFINITION: BuilderDefinition<ModalBuilderState> = {
