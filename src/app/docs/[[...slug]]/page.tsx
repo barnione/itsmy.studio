@@ -18,9 +18,15 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   if (!page) notFound();
 
   const MDX = page.data.body;
+  const rightSidebar = page.data.rightSidebar !== false;
+  const full = page.data.full || !rightSidebar;
 
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full} tableOfContent={{ style: 'clerk'}}>
+    <DocsPage
+      toc={page.data.toc}
+      full={full}
+      tableOfContent={rightSidebar ? { style: 'clerk' } : { enabled: false, style: 'clerk' }}
+    >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription className="mb-0">{page.data.description}</DocsDescription>
       <div className="flex flex-row gap-2 items-center border-b pb-6">
