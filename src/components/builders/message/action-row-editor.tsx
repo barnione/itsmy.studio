@@ -1,7 +1,6 @@
 'use client';
 
 import { Plus } from 'lucide-react';
-import { useState } from 'react';
 import { BuilderField } from '@/components/builders/ui';
 import {
   ACTION_ROW_COMPONENTS,
@@ -61,7 +60,6 @@ function ActionRowItemsEditor({
   components: ActionRowChildComponent[];
   onChange: (components: ActionRowChildComponent[]) => void;
 }) {
-  const [lastAddedComponentId, setLastAddedComponentId] = useState<string | null>(null);
   const hasSelectMenu = components.some((component) => component.type === 'select-menu');
   const buttons = components.filter(
     (component): component is ButtonComponent => component.type === 'button',
@@ -85,7 +83,6 @@ function ActionRowItemsEditor({
           <ButtonEditor
             key={button.id}
             button={button}
-            defaultOpen={button.id === lastAddedComponentId}
             onChange={(next) => onChange(replaceAt(buttons, index, next))}
             onMoveUp={() => onChange(moveItem(buttons, index, index - 1))}
             onMoveDown={() => onChange(moveItem(buttons, index, index + 1))}
@@ -102,13 +99,11 @@ function ActionRowItemsEditor({
         onAdd={(type) => {
           if (type === 'select-menu') {
             const nextComponent = createActionRowChildComponent('select-menu');
-            setLastAddedComponentId(nextComponent.id);
             onChange([nextComponent]);
             return;
           }
 
           const nextComponent = createActionRowChildComponent('button');
-          setLastAddedComponentId(nextComponent.id);
           onChange([...buttons, nextComponent]);
         }}
       />

@@ -7,18 +7,15 @@ import { CollapsibleEditorCard } from './shared';
 export function ThumbnailEditor({
   thumbnail,
   onChange,
-  collapsible = true,
 }: {
   thumbnail: ThumbnailComponent;
   onChange: (thumbnail: ThumbnailComponent) => void;
-  collapsible?: boolean;
 }) {
   return (
     <CollapsibleEditorCard
       label="Thumbnail"
       description="Display an image accessory on the right side of the section."
-      summary={thumbnail.url || 'No image URL'}
-      collapsible={collapsible}
+      collapsible={false}
       actions={
         thumbnail.url ? (
           <img src={thumbnail.url} alt="" className="size-12 rounded-lg border object-cover" />

@@ -30,8 +30,6 @@ export function ButtonEditor({
   canMoveUp = false,
   canMoveDown = false,
   allowRemove,
-  defaultOpen = false,
-  collapsible = true,
 }: {
   button: ButtonComponent;
   onChange: (button: ButtonComponent) => void;
@@ -41,21 +39,11 @@ export function ButtonEditor({
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   allowRemove: boolean;
-  defaultOpen?: boolean;
-  collapsible?: boolean;
 }) {
-  const summaryParts = [
-    button.label || 'No label',
-    button.style,
-    button.style === 'link' ? button.url || 'No URL' : button.customId || 'No custom ID',
-  ];
-
   return (
     <CollapsibleEditorCard
       label="Button"
-      summary={summaryParts.join(' • ')}
-      defaultOpen={defaultOpen}
-      collapsible={collapsible}
+      collapsible={false}
       actions={
         allowRemove ? (
           <ReorderActions

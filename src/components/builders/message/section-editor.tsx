@@ -1,27 +1,17 @@
 'use client';
 
-import { useState } from 'react';
 import { BuilderField, BuilderOptionTabs } from '@/components/builders/ui';
 import { createAccessory, createTextDisplay, type SectionComponent, type TextDisplayComponent } from '@/lib/builders/message';
 import { moveItem, removeAt, replaceAt } from '@/lib/builders/core';
 import { ButtonEditor } from './button-editor';
 import { TextDisplayEditor } from './text-display-editor';
 import { ThumbnailEditor } from './thumbnail-editor';
-import { AddItemButton, CollapsibleEditorCard, ReorderActions } from './shared';
+import { AddItemButton, NestedEditorCard, ReorderActions } from './shared';
 
 const sectionAccessoryOptions = [
   { value: 'button', label: 'Button', hint: 'Interactive accessory' },
   { value: 'thumbnail', label: 'Thumbnail', hint: 'Image accessory' },
 ] as const;
-
-function summarizeTextDisplay(content: string) {
-  const summary = content
-    .split('\n')
-    .map((line) => line.trim())
-    .find((line) => line.length > 0);
-
-  return summary ?? 'Empty text';
-}
 
 function SectionTextListEditor({
   components,
@@ -30,17 +20,16 @@ function SectionTextListEditor({
   components: TextDisplayComponent[];
   onChange: (components: TextDisplayComponent[]) => void;
 }) {
-  const [lastAddedTextId, setLastAddedTextId] = useState<string | null>(null);
-
   return (
     <div className="flex flex-col gap-2 rounded-lg bg-fd-background p-2">
       {components.map((component, index) => (
-        <CollapsibleEditorCard
+        <NestedEditorCard
           key={component.id}
-          label="Text Display"
-          summary={summarizeTextDisplay(component.content)}
-          defaultOpen={component.id === lastAddedTextId}
-          actions={
+        >
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-xs font-medium uppercase tracking-[0.22em] text-fd-muted-foreground">
+              Text Display
+            </p>
             <ReorderActions
               itemLabel="text block"
               canMoveUp={index > 0}
@@ -49,20 +38,19 @@ function SectionTextListEditor({
               onMoveDown={() => onChange(moveItem(components, index, index + 1))}
               onRemove={() => onChange(removeAt(components, index))}
             />
-          }
-        >
+          </div>
+
           <TextDisplayEditor
             component={component}
             onChange={(next) => onChange(replaceAt(components, index, next))}
           />
-        </CollapsibleEditorCard>
+        </NestedEditorCard>
       ))}
 
       <AddItemButton
         label="Add Text Display"
         onClick={() => {
           const nextComponent = createTextDisplay('Another text block');
-          setLastAddedTextId(nextComponent.id);
           onChange([...components, nextComponent]);
         }}
       />
@@ -116,14 +104,12 @@ export function SectionEditor({
               button={component.accessory}
               onChange={(button) => onChange({ ...component, accessory: button })}
               allowRemove={false}
-              collapsible={false}
             />
           ) : null}
 
           {component.accessory?.type === 'thumbnail' ? (
             <ThumbnailEditor
               thumbnail={component.accessory}
-              collapsible={false}
               onChange={(thumbnail) =>
                 onChange({
                   ...component,

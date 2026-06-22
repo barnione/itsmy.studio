@@ -92,11 +92,13 @@ export function SelectMenuEditor({
   description?: string;
   createOption?: () => SelectMenuOption;
 }) {
-  const summary = [
-    menu.placeholder || 'No placeholder',
-    `${menu.options.length} option${menu.options.length === 1 ? '' : 's'}`,
-    menu.customId || 'No custom ID',
-  ].join(' • ');
+  const summary = collapsible
+    ? [
+        menu.placeholder || 'No placeholder',
+        `${menu.options.length} option${menu.options.length === 1 ? '' : 's'}`,
+        menu.customId || 'No custom ID',
+      ].join(' • ')
+    : undefined;
 
   return (
     <CollapsibleEditorCard

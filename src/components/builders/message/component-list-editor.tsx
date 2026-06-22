@@ -24,21 +24,23 @@ import { SeparatorEditor } from './separator-editor';
 import { TextDisplayEditor } from './text-display-editor';
 import { CollapsibleEditorCard, ReorderActions } from './shared';
 
-function summarizeTextDisplay(content: string) {
-  const summary = content
-    .split('\n')
-    .map((line) => line.trim())
-    .find((line) => line.length > 0);
-
-  return summary ?? 'Empty text';
-}
-
-function summarizeComponent(component: BuilderComponent) {
+function hasNestedBuilder(component: BuilderComponent) {
   switch (component.type) {
     case 'text-display':
-      return summarizeTextDisplay(component.content);
     case 'separator':
-      return `${component.spacing === 2 ? 'Large' : 'Compact'} • ${component.divider ? 'Divider' : 'Spacing only'}`;
+    case 'file':
+      return false;
+    case 'action-row':
+    case 'section':
+    case 'container':
+    case 'media-gallery':
+    case 'repeat':
+      return true;
+  }
+}
+
+function summarizeNestedComponent(component: BuilderComponent) {
+  switch (component.type) {
     case 'action-row': {
       const child = component.components[0];
 
@@ -55,10 +57,12 @@ function summarizeComponent(component: BuilderComponent) {
       return `${component.components.length} nested component${component.components.length === 1 ? '' : 's'}${component.color ? ` • ${component.color}` : ''}${component.spoiler ? ' • spoiler' : ''}`;
     case 'media-gallery':
       return `${component.items.length} media item${component.items.length === 1 ? '' : 's'}`;
-    case 'file':
-      return `${component.url || 'No file URL'}${component.spoiler ? ' • spoiler' : ''}`;
     case 'repeat':
       return `${component.dataSource || 'No data source'} • ${component.template.length} template block${component.template.length === 1 ? '' : 's'}`;
+    case 'text-display':
+    case 'separator':
+    case 'file':
+      return undefined;
   }
 }
 
@@ -105,12 +109,15 @@ function ComponentEditor({
   canMoveDown: boolean;
   defaultOpen?: boolean;
 }) {
+  const collapsible = hasNestedBuilder(component);
+
   return (
     <CollapsibleEditorCard
       label={formatComponentType(component.type)}
       description={describeComponent(component.type)}
-      summary={summarizeComponent(component)}
-      defaultOpen={defaultOpen}
+      summary={collapsible ? summarizeNestedComponent(component) : undefined}
+      defaultOpen={collapsible && defaultOpen}
+      collapsible={collapsible}
       actions={
         <ReorderActions
           itemLabel="component"

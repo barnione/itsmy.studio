@@ -1,9 +1,8 @@
 'use client';
 
-import { ChevronRight, Clipboard, RotateCcw } from 'lucide-react';
-import { useState } from 'react';
+import { Clipboard, RotateCcw } from 'lucide-react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { buttonVariants } from 'fumadocs-ui/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'fumadocs-ui/components/ui/collapsible';
 import { ItsMyConfigPreview } from '@/components/builders/itsmyconfig/preview';
 import { BuilderShell } from '@/components/builders/shell';
 import {
@@ -43,9 +42,6 @@ export function ItsMyConfigBuilder({
   );
   const [activeView, setActiveView] = useState<ItsMyConfigPreviewView>('chat');
   const [selectedPresetId, setSelectedPresetId] = useState(ITSMYCONFIG_BUILDER_PRESETS[0]?.id ?? 'default');
-  const [openPlaceholders, setOpenPlaceholders] = useState<Record<string, boolean>>(() =>
-    createPlaceholderOpenState(controlledConfig?.placeholders ?? createInitialItsMyConfigState().placeholders),
-  );
   const [importState, setImportState] = useState<{ tone: 'success' | 'error'; message: string } | null>(
     null,
   );
@@ -93,7 +89,6 @@ export function ItsMyConfigBuilder({
         ...importedState,
         templates: current.templates,
       }));
-      setOpenPlaceholders(createPlaceholderOpenState(importedState.placeholders));
       setImportState({ tone: 'success', message: 'Placeholder YAML imported from clipboard.' });
     } catch {
       setImportState({
@@ -111,7 +106,6 @@ export function ItsMyConfigBuilder({
       ...nextState,
       templates: current.templates,
     }));
-    setOpenPlaceholders(createPlaceholderOpenState(nextState.placeholders));
     setImportState({ tone: 'success', message: 'Default placeholders restored.' });
     window.setTimeout(() => setImportState(null), 2200);
   }
@@ -121,7 +115,6 @@ export function ItsMyConfigBuilder({
     const nextState = createItsMyConfigStateFromPreset(selectedPresetId);
 
     setConfig(nextState);
-    setOpenPlaceholders(createPlaceholderOpenState(nextState.placeholders));
     setImportState({
       tone: 'success',
       message: preset ? `Preset "${preset.label}" applied.` : 'Preset applied.',
@@ -202,18 +195,11 @@ export function ItsMyConfigBuilder({
         title: 'Placeholders & Examples',
         description: 'The example snippets are already there. Change values and adjust the fixed templates.',
         children: (
-          <div className="grid gap-3">
+          <div className="grid gap-2">
             {visiblePlaceholderEntries.map(({ placeholder, index }) => (
               <PlaceholderCard
                 key={placeholder.id}
                 placeholder={placeholder}
-                open={openPlaceholders[placeholder.id] ?? false}
-                onOpenChange={(open) =>
-                  setOpenPlaceholders((current) => ({
-                    ...current,
-                    [placeholder.id]: open,
-                  }))
-                }
                 onChange={(nextPlaceholder) => replacePlaceholder(index, nextPlaceholder)}
               />
             ))}
@@ -243,116 +229,87 @@ export function ItsMyConfigBuilder({
 
 function PlaceholderCard({
   placeholder,
-  open,
-  onOpenChange,
   onChange,
 }: {
   placeholder: ItsMyConfigPlaceholder;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   onChange: (placeholder: ItsMyConfigPlaceholder) => void;
 }) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaValue =
+    placeholder.type === 'string' || placeholder.type === 'colored_text' ? placeholder.value : '';
+
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = '0px';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [textareaValue]);
+
   return (
-    <Collapsible open={open} onOpenChange={onOpenChange}>
-      <div className="rounded-xl border border-fd-border/70 bg-fd-background p-3">
-        <div className="flex items-start gap-2">
-          <CollapsibleTrigger asChild>
-            <button
-              type="button"
-              aria-label={open ? `Collapse ${placeholder.id}` : `Expand ${placeholder.id}`}
-              className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-md text-fd-muted-foreground transition hover:bg-fd-accent/60 hover:text-fd-foreground"
-            >
-              <ChevronRight className={cn('size-4 transition-transform', open && 'rotate-90')} />
-            </button>
-          </CollapsibleTrigger>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              <h4 className="text-sm font-semibold">{placeholder.id}</h4>
-              {placeholder.description ? (
-                <p className="text-xs text-fd-muted-foreground">{placeholder.description}</p>
-              ) : null}
-            </div>
-
-            {!open ? (
-              <p className="mt-1 truncate text-xs text-fd-muted-foreground">
-                {getPlaceholderSummary(placeholder)}
-              </p>
-            ) : null}
-          </div>
+    <div className="rounded-xl border border-fd-border/70 bg-fd-background p-3 pb-1">
+      <div className="min-w-0">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <h4 className="text-sm font-semibold">{placeholder.id}</h4>
+          {placeholder.description ? (
+            <p className="text-xs text-fd-muted-foreground">{placeholder.description}</p>
+          ) : null}
         </div>
+      </div>
 
-        <CollapsibleContent className="pt-3">
-          {placeholder.type === 'string' || placeholder.type === 'colored_text' ? (
-            <textarea
+      <div className="pt-3">
+        {placeholder.type === 'string' || placeholder.type === 'colored_text' ? (
+          <textarea
+            ref={textareaRef}
+            value={placeholder.value}
+            onChange={(event) => onChange({ ...placeholder, value: event.target.value })}
+            rows={1}
+            className={cn(builderInputClassName, 'resize-none overflow-hidden py-2 leading-5')}
+            spellCheck={false}
+            aria-label={`${placeholder.id} value`}
+          />
+        ) : null}
+
+        {placeholder.type === 'color' ? (
+          <div className="grid gap-3">
+            <input
               value={placeholder.value}
               onChange={(event) => onChange({ ...placeholder, value: event.target.value })}
-              className={cn(builderInputClassName, 'min-h-[72px] py-2 leading-5 resize-y')}
+              className={builderInputClassName}
               spellCheck={false}
-              aria-label={`${placeholder.id} value`}
+              placeholder="yellow"
+              aria-label={`${placeholder.id} color`}
             />
-          ) : null}
 
-          {placeholder.type === 'color' ? (
-            <div className="grid gap-3">
-              <input
-                value={placeholder.value}
-                onChange={(event) => onChange({ ...placeholder, value: event.target.value })}
-                className={builderInputClassName}
-                spellCheck={false}
-                placeholder="yellow"
-                aria-label={`${placeholder.id} color`}
+            <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4 mb-1">
+              <BuilderToggleField
+                label="Bold"
+                description="Adds `<bold>` to the opening color tag."
+                checked={placeholder.bold}
+                onCheckedChange={(bold) => onChange({ ...placeholder, bold })}
               />
-
-              <div className="grid gap-2 md:grid-cols-2">
-                <BuilderToggleField
-                  label="Bold"
-                  description="Adds `<bold>` to the opening color tag."
-                  checked={placeholder.bold}
-                  onCheckedChange={(bold) => onChange({ ...placeholder, bold })}
-                />
-                <BuilderToggleField
-                  label="Italic"
-                  description="Adds `<italic>` to the opening color tag."
-                  checked={placeholder.italic}
-                  onCheckedChange={(italic) => onChange({ ...placeholder, italic })}
-                />
-                <BuilderToggleField
-                  label="Underlined"
-                  description="Adds `<underlined>` to the opening color tag."
-                  checked={placeholder.underlined}
-                  onCheckedChange={(underlined) => onChange({ ...placeholder, underlined })}
-                />
-                <BuilderToggleField
-                  label="Strikethrough"
-                  description="Adds `<strikethrough>` to the opening color tag."
-                  checked={placeholder.strikethrough}
-                  onCheckedChange={(strikethrough) => onChange({ ...placeholder, strikethrough })}
-                />
-              </div>
+              <BuilderToggleField
+                label="Italic"
+                description="Adds `<italic>` to the opening color tag."
+                checked={placeholder.italic}
+                onCheckedChange={(italic) => onChange({ ...placeholder, italic })}
+              />
+              <BuilderToggleField
+                label="Underlined"
+                description="Adds `<underlined>` to the opening color tag."
+                checked={placeholder.underlined}
+                onCheckedChange={(underlined) => onChange({ ...placeholder, underlined })}
+              />
+              <BuilderToggleField
+                label="Strikethrough"
+                description="Adds `<strikethrough>` to the opening color tag."
+                checked={placeholder.strikethrough}
+                onCheckedChange={(strikethrough) => onChange({ ...placeholder, strikethrough })}
+              />
             </div>
-          ) : null}
-        </CollapsibleContent>
+          </div>
+        ) : null}
       </div>
-    </Collapsible>
+    </div>
   );
-}
-
-function createPlaceholderOpenState(placeholders: ItsMyConfigPlaceholder[], open = false) {
-  return placeholders.reduce<Record<string, boolean>>((state, placeholder) => {
-    if (isItsMyConfigPlaceholderVisible(placeholder)) {
-      state[placeholder.id] = open;
-    }
-
-    return state;
-  }, {});
-}
-
-function getPlaceholderSummary(placeholder: ItsMyConfigPlaceholder) {
-  switch (placeholder.type) {
-    case 'string':
-    case 'colored_text':
-    case 'color':
-      return placeholder.value;
-  }
 }

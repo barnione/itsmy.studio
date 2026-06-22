@@ -64,12 +64,7 @@ function clampInteger(value: string, min: number, max: number, fallback: number 
   return Math.min(max, Math.max(min, Math.trunc(parsed)));
 }
 
-function summarizeModalComponent(component: ModalBuilderComponent) {
-  if (component.type === 'text-display') {
-    const text = component.content.replace(/\s+/g, ' ').trim();
-    return text.length > 0 ? text : 'No text';
-  }
-
+function summarizeModalLabel(component: LabelComponent) {
   const inputLabel = formatModalComponentType(component.component.type);
   const inputSummary = (() => {
     switch (component.component.type) {
@@ -696,12 +691,15 @@ function ComponentEditor({
   canMoveDown: boolean;
   defaultOpen?: boolean;
 }) {
+  const collapsible = component.type === 'label';
+
   return (
     <CollapsibleEditorCard
       label={formatModalComponentType(component.type)}
       description={describeModalComponent(component.type)}
-      summary={summarizeModalComponent(component)}
-      defaultOpen={defaultOpen}
+      summary={component.type === 'label' ? summarizeModalLabel(component) : undefined}
+      defaultOpen={collapsible && defaultOpen}
+      collapsible={collapsible}
       actions={
         <ReorderActions
           itemLabel="component"
