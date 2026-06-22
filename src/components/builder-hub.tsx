@@ -16,6 +16,11 @@ import {
   deserializeModalConfig,
   type ModalBuilderState,
 } from '@/lib/builders/modal';
+import {
+  DEFAULT_YAML_OUTPUT_INDENT,
+  dedentYamlInput,
+  detectYamlOutputIndent,
+} from '@/lib/builders/core';
 import { cn } from '@/lib/cn';
 
 type BuilderTab = 'message' | 'modal' | 'script';
@@ -65,6 +70,8 @@ function BuilderHubContent() {
   const [modalConfig, setModalConfig] = useState<ModalBuilderState>(
     MODAL_BUILDER_DEFINITION.createInitialState,
   );
+  const [messageYamlOutputIndent, setMessageYamlOutputIndent] = useState(DEFAULT_YAML_OUTPUT_INDENT);
+  const [modalYamlOutputIndent, setModalYamlOutputIndent] = useState(DEFAULT_YAML_OUTPUT_INDENT);
 
   useEffect(() => {
     if (tabParam === activeTab) return;
@@ -91,14 +98,17 @@ function BuilderHubContent() {
         throw new Error('Clipboard is empty.');
       }
 
+      const yamlOutputIndent = detectYamlOutputIndent(yaml);
       const { load } = await import('js-yaml');
-      const parsed = load(yaml);
+      const parsed = load(dedentYamlInput(yaml, yamlOutputIndent));
 
       if (activeTab === 'message') {
         setMessageConfig(deserializeMessageConfig(parsed));
+        setMessageYamlOutputIndent(yamlOutputIndent);
       } else if (activeTab === 'modal') {
         setModalConfig(deserializeModalConfig(parsed));
-      } 
+        setModalYamlOutputIndent(yamlOutputIndent);
+      }
 
       setImportState({ tone: 'success', message: 'YAML imported from clipboard.' });
     } catch (error) {
@@ -168,9 +178,19 @@ function BuilderHubContent() {
       </div>
 
       {activeTab === 'message' ? (
-        <MessageBuilder config={messageConfig} onChange={setMessageConfig} />
+        <MessageBuilder
+          config={messageConfig}
+          onChange={setMessageConfig}
+          yamlOutputIndent={messageYamlOutputIndent}
+          onYamlOutputIndentChange={setMessageYamlOutputIndent}
+        />
       ) : (
-        <ModalBuilder config={modalConfig} onChange={setModalConfig} />
+        <ModalBuilder
+          config={modalConfig}
+          onChange={setModalConfig}
+          yamlOutputIndent={modalYamlOutputIndent}
+          onYamlOutputIndentChange={setModalYamlOutputIndent}
+        />
       )}
     </div>
   );

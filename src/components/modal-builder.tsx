@@ -3,8 +3,14 @@
 import { useState } from 'react';
 import { ModalComponentListEditor } from '@/components/builders/modal/component-list-editor';
 import { ModalPreview } from '@/components/builders/modal/preview';
+import { OutputIndentControl } from '@/components/builders/output-indent-control';
 import { BuilderShell } from '@/components/builders/shell';
 import { BuilderField, builderInputClassName } from '@/components/builders/ui';
+import {
+  DEFAULT_YAML_OUTPUT_INDENT,
+  indentYamlOutput,
+  normalizeYamlOutputIndent,
+} from '@/lib/builders/core';
 import {
   MODAL_BUILDER_DEFINITION,
   type ModalBuilderState,
@@ -17,15 +23,21 @@ function resolveNextState<T>(updater: T | ((current: T) => T), current: T) {
 export function ModalBuilder({
   config: controlledConfig,
   onChange,
+  yamlOutputIndent: controlledYamlOutputIndent,
+  onYamlOutputIndentChange,
 }: {
   config?: ModalBuilderState;
   onChange?: (config: ModalBuilderState) => void;
+  yamlOutputIndent?: number;
+  onYamlOutputIndentChange?: (indent: number) => void;
 }) {
   const [internalConfig, setInternalConfig] = useState<ModalBuilderState>(
     MODAL_BUILDER_DEFINITION.createInitialState,
   );
+  const [internalYamlOutputIndent, setInternalYamlOutputIndent] = useState(DEFAULT_YAML_OUTPUT_INDENT);
   const isControlled = controlledConfig !== undefined && onChange !== undefined;
   const config = isControlled ? controlledConfig : internalConfig;
+  const yamlOutputIndent = controlledYamlOutputIndent ?? internalYamlOutputIndent;
 
   function setConfig(updater: ModalBuilderState | ((current: ModalBuilderState) => ModalBuilderState)) {
     const next = resolveNextState(updater, config);
@@ -38,7 +50,13 @@ export function ModalBuilder({
     setInternalConfig(next);
   }
 
-  const output = MODAL_BUILDER_DEFINITION.serialize(config);
+  function setYamlOutputIndent(value: number | string) {
+    const next = normalizeYamlOutputIndent(value);
+    setInternalYamlOutputIndent(next);
+    onYamlOutputIndentChange?.(next);
+  }
+
+  const output = indentYamlOutput(MODAL_BUILDER_DEFINITION.serialize(config), yamlOutputIndent);
 
   return (
     <BuilderShell
@@ -93,6 +111,9 @@ export function ModalBuilder({
       }}
       output={output}
       outputConfig={MODAL_BUILDER_DEFINITION.output}
+      outputAction={
+        <OutputIndentControl value={yamlOutputIndent} onChange={setYamlOutputIndent} />
+      }
     />
   );
 }

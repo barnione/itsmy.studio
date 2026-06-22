@@ -18,12 +18,14 @@ export function BuilderShell({
   preview,
   output,
   outputConfig,
+  outputAction,
 }: {
   options?: BuilderShellSection;
   editor: BuilderShellSection;
   preview?: BuilderShellSection;
   output: string;
   outputConfig: BuilderOutputDefinition;
+  outputAction?: ReactNode;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -69,6 +71,7 @@ export function BuilderShell({
         <BuilderPanel
           title={outputConfig.title}
           description={outputConfig.description}
+          action={outputAction}
         >
           <div className="min-w-0 overflow-x-auto">
             <DynamicCodeBlock lang={outputConfig.lang ?? 'yaml'} code={output} />
